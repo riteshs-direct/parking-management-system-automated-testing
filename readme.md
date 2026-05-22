@@ -2,7 +2,7 @@
 
 A fully client-side, single-file web application for managing parking slots, paired with a complete Selenium automated test suite.
 
-Built with vanilla HTML, CSS, and JavaScript — no server or build step required.
+Built with vanilla HTML, CSS, and JavaScript no server or build step required.
 
 ![Tests](https://github.com/riteshs-direct/parking-management-system-automated-testing/actions/workflows/tests.yml/badge.svg)
 
