@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PMS - Parking Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #151820;
+    --surface2: #1c2030;
+    --border: #252a3a;
+    --accent: #4f8ef7;
+    --accent2: #38d9a9;
+    --warn: #f7c94f;
+    --danger: #f76f6f;
+    --text: #e8ecf4;
+    --muted: #7a84a0;
+    --font: 'Sora', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+  /* ── AUTH ── */
+  #authScreen { display:flex; align-items:center; justify-content:center; min-height:100vh; background: radial-gradient(ellipse at 30% 60%, #1a2040 0%, var(--bg) 70%); }
+  .auth-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px 36px; width: 380px; box-shadow: 0 24px 60px #00000080; }
+  .auth-box h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .auth-box .sub { color: var(--muted); font-size: .82rem; margin-bottom: 28px; }
+  .tabs { display:flex; gap:8px; margin-bottom:24px; }
+  .tabs button { flex:1; padding:8px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:var(--font); font-size:.85rem; cursor:pointer; transition:.2s; }
+  .tabs button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+  /* ── LAYOUT ── */
+  #app { display:none; min-height:100vh; }
+  .sidebar { position:fixed; left:0; top:0; bottom:0; width:220px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:20px 0; z-index:100; }
+  .sidebar .logo { padding:0 20px 24px; font-weight:700; font-size:1.1rem; letter-spacing:-.3px; border-bottom:1px solid var(--border); margin-bottom:12px; }
+  .sidebar .logo span { color:var(--accent); }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:10px 20px; cursor:pointer; font-size:.85rem; color:var(--muted); border-left:3px solid transparent; transition:.15s; }
+  .nav-item:hover { color:var(--text); background:var(--surface2); }
+  .nav-item.active { color:var(--accent); border-left-color:var(--accent); background:rgba(79,142,247,.08); }
+  .nav-item .ico { font-size:1rem; width:20px; text-align:center; }
+  .sidebar .user-info { margin-top:auto; padding:16px 20px; border-top:1px solid var(--border); font-size:.8rem; color:var(--muted); }
+  .sidebar .user-info strong { display:block; color:var(--text); }
+  .sidebar .user-info .badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:.7rem; background:rgba(79,142,247,.2); color:var(--accent); margin-top:4px; }
+  .main { margin-left:220px; padding:32px; min-height:100vh; }
+  .page { display:none; }
+  .page.active { display:block; animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+  .page-title { font-size:1.4rem; font-weight:700; margin-bottom:4px; }
+  .page-sub { color:var(--muted); font-size:.82rem; margin-bottom:24px; }
+
+  /* ── CARDS / GRID ── */
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; margin-bottom:28px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; }
+  .card .card-label { font-size:.75rem; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em; }
+  .card .card-value { font-size:1.8rem; font-weight:700; font-family:var(--mono); }
+  .card .card-value.green { color:var(--accent2); }
+  .card .card-value.blue { color:var(--accent); }
+  .card .card-value.yellow { color:var(--warn); }
+  .card .card-value.red { color:var(--danger); }
+
+  /* ── FORM ── */
+  .form-box { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:28px; max-width:520px; }
+  .form-row { margin-bottom:16px; }
+  .form-row label { display:block; font-size:.8rem; color:var(--muted); margin-bottom:6px; }
+  .form-row input, .form-row select, .form-row textarea {
+    width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+    padding:10px 12px; color:var(--text); font-family:var(--font); font-size:.88rem; outline:none;
+    transition:.15s;
+  }
+  .form-row input:focus, .form-row select:focus { border-color:var(--accent); }
+  .form-row select option { background:var(--surface2); }
+  .btn { padding:10px 20px; border-radius:8px; border:none; font-family:var(--font); font-size:.85rem; font-weight:600; cursor:pointer; transition:.15s; }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:#3d7ae0; }
+  .btn-success { background:var(--accent2); color:#0d1a14; }
+  .btn-success:hover { opacity:.85; }
+  .btn-danger { background:var(--danger); color:#fff; }
+  .btn-danger:hover { opacity:.85; }
+  .btn-ghost { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+  .btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-sm { padding:6px 12px; font-size:.78rem; }
+
+  /* ── TABLE ── */
+  .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  table { width:100%; border-collapse:collapse; font-size:.83rem; }
+  thead th { background:var(--surface2); padding:12px 16px; text-align:left; font-size:.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  tbody td { padding:12px 16px; border-top:1px solid var(--border); }
+  tbody tr:hover { background:rgba(255,255,255,.025); }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.72rem; font-weight:600; }
+  .badge-green { background:rgba(56,217,169,.15); color:var(--accent2); }
+  .badge-red { background:rgba(247,111,111,.15); color:var(--danger); }
+  .badge-yellow { background:rgba(247,201,79,.15); color:var(--warn); }
+  .badge-blue { background:rgba(79,142,247,.15); color:var(--accent); }
+
+  /* ── SLOT GRID ── */
+  .slot-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:10px; }
+  .slot-cell { border-radius:10px; padding:12px 8px; text-align:center; font-size:.75rem; font-family:var(--mono); border:2px solid; cursor:pointer; transition:.15s; }
+  .slot-cell.available { border-color:var(--accent2); background:rgba(56,217,169,.08); color:var(--accent2); }
+  .slot-cell.occupied  { border-color:var(--danger); background:rgba(247,111,111,.08); color:var(--danger); }
+  .slot-cell.available:hover { background:rgba(56,217,169,.2); }
+  .slot-cell .slot-id { font-weight:700; font-size:.85rem; }
+  .slot-cell .slot-type { font-size:.65rem; opacity:.7; margin-top:2px; }
+
+  /* ── ALERT ── */
+  .alert { padding:12px 16px; border-radius:8px; font-size:.83rem; margin-bottom:16px; display:flex; align-items:flex-start; gap:10px; }
+  .alert-success { background:rgba(56,217,169,.12); border:1px solid rgba(56,217,169,.3); color:var(--accent2); }
+  .alert-error { background:rgba(247,111,111,.12); border:1px solid rgba(247,111,111,.3); color:var(--danger); }
+  .alert-info { background:rgba(79,142,247,.12); border:1px solid rgba(79,142,247,.3); color:var(--accent); }
+  .alert-warn { background:rgba(247,201,79,.12); border:1px solid rgba(247,201,79,.3); color:var(--warn); }
+
+  /* ── MISC ── */
+  .section-title { font-size:.9rem; font-weight:600; margin-bottom:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .flex-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .spacer { height:20px; }
+  .filter-row { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .filter-row input, .filter-row select { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 12px; color:var(--text); font-family:var(--font); font-size:.83rem; outline:none; }
+  .filter-row input:focus, .filter-row select:focus { border-color:var(--accent); }
+  .notif-item { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; display:flex; gap:14px; align-items:flex-start; }
+  .notif-item .notif-ico { font-size:1.2rem; }
+  .notif-item .notif-body .notif-msg { font-size:.85rem; }
+  .notif-item .notif-body .notif-time { font-size:.72rem; color:var(--muted); margin-top:3px; }
+  .report-table td, .report-table th { font-size:.82rem; }
+  hr.divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
+  #toast { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+  .toast-msg { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 18px; font-size:.83rem; box-shadow:0 8px 24px #00000060; animation:slideIn .3s ease; max-width:300px; }
+  .toast-msg.success { border-color:var(--accent2); color:var(--accent2); }
+  .toast-msg.error { border-color:var(--danger); color:var(--danger); }
+  .toast-msg.info { border-color:var(--accent); color:var(--accent); }
+  @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:none} }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media(max-width:700px){ .two-col{grid-template-columns:1fr;} .sidebar{display:none;} .main{margin-left:0;} }
+  .tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:.7rem; background:var(--surface2); color:var(--muted); font-family:var(--mono); }
+  .admin-only { display:none; }
+  .is-admin .admin-only { display:flex; }
+  .is-admin .admin-only-block { display:block; }
+  .admin-only-block { display:none; }
+  .info-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-bottom:20px; }
+  .info-cell { background:var(--surface2); border-radius:8px; padding:14px; font-size:.82rem; }
+  .info-cell .lbl { color:var(--muted); font-size:.72rem; margin-bottom:4px; }
+</style>
+</head>
+<body>
+
+<!--  AUTH SCREEN  -->
+<div id="authScreen">
+  <div class="auth-box">
+    <h1>🅿 PMS</h1>
+    <div class="sub">Parking Management System – VIT Lab</div>
+    <div class="tabs">
+      <button class="active" onclick="switchAuthTab('login')">Login</button>
+      <button onclick="switchAuthTab('register')">Register</button>
+    </div>
+
+    <div id="loginForm">
+      <div class="form-row"><label>Username</label><input id="l_user" placeholder="your username"/></div>
+      <div class="form-row"><label>Password</label><input id="l_pass" type="password" placeholder="password"/></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="doLogin()">Login →</button>
+      <div style="margin-top:12px;font-size:.75rem;color:var(--muted)">Default admin → <span style="color:var(--accent)">admin / admin123</span></div>
+    </div>
+
+    <div id="registerForm" style="display:none">
+      <div class="form-row"><label>Full Name</label><input id="r_name" placeholder="John Doe"/></div>
+      <div class="form-row"><label>Employee ID</label><input id="r_empid" placeholder="EMP001"/></div>
+      <div class="form-row"><label>Username</label><input id="r_user" placeholder="johndoe"/></div>
+      <div class="form-row"><label>Password</label><input id="r_pass" type="password" placeholder="min 6 chars"/></div>
+      <button class="btn btn-success" style="width:100%;margin-top:4px" onclick="doRegister()">Create Account →</button>
+    </div>
+  </div>
+</div>
+
+<!--  MAIN APP -->
+<div id="app">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="logo">🅿 <span>PMS</span></div>
+    <div class="nav-item active" onclick="goto('dashboard')"><span class="ico">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="goto('slots')"><span class="ico">🗺</span> Slot Monitor</div>
+    <div class="nav-item" onclick="goto('allocate')"><span class="ico">🚗</span> Allocate Slot</div>
+    <div class="nav-item" onclick="goto('vehicles')"><span class="ico">🔑</span> Vehicles</div>
+    <div class="nav-item" onclick="goto('reports')"><span class="ico">📋</span> Reports</div>
+    <div class="nav-item" onclick="goto('notifications')"><span class="ico">🔔</span> Notifications</div>
+    <div class="nav-item admin-only" onclick="goto('users')"><span class="ico">👥</span> Users</div>
+    <div class="nav-item admin-only" onclick="goto('backup')"><span class="ico">💾</span> Backup</div>
+    <div class="user-info">
+      <strong id="sb_name">User</strong>
+      <span id="sb_empid" style="font-size:.72rem"></span>
+      <div><span class="badge" id="sb_role">Employee</span></div>
+      <div style="margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button></div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub">Live overview of the parking system</div>
+      <div class="cards" id="dashCards"></div>
+      <div class="two-col">
+        <div>
+          <div class="section-title">Recent Allocations</div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Slot</th><th>Vehicle</th><th>Time</th><th>Status</th></tr></thead>
+            <tbody id="recentAlloc"></tbody></table>
+          </div>
+        </div>
+        <div>
+          <div class="section-title">Recent Alerts</div>
+          <div id="dashAlerts"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLOT MONITOR -->
+    <div class="page" id="page-slots">
+      <div class="page-title">Slot Monitor</div>
+      <div class="page-sub">Real-time availability of all parking slots. Click a slot for details.</div>
+      <div class="filter-row">
+        <select id="slotFilter" onchange="renderSlots()">
+          <option value="">All Types</option>
+          <option value="2W">2-Wheeler</option>
+          <option value="4W">4-Wheeler</option>
+        </select>
+        <select id="slotStatusFilter" onchange="renderSlots()">
+          <option value="">All Status</option>
+          <option value="available">Available</option>
+          <option value="occupied">Occupied</option>
+        </select>
+      </div>
+      <div id="slotGrid" class="slot-grid"></div>
+      <div class="spacer"></div>
+      <div id="slotDetail" style="display:none" class="form-box">
+        <div class="section-title">Slot Details</div>
+        <div id="slotDetailContent"></div>
+      </div>
+    </div>
+
+    <!-- ALLOCATE -->
+    <div class="page" id="page-allocate">
+      <div class="page-title">Allocate / De-allocate Slot</div>
+      <div class="page-sub">Assign a vehicle to a slot or mark a vehicle as exited.</div>
+      <div class="two-col">
+        <div>
+          <div class="section-title">Allocate Slot</div>
+          <div class="form-box">
+            <div class="form-row"><label>Vehicle Number</label>
+              <input id="al_veh" placeholder="e.g. TN01AB1234" oninput="this.value=this.value.toUpperCase()"/>
+            </div>
+            <div class="form-row"><label>Vehicle Type</label>
+              <select id="al_type">
+                <option value="2W">2-Wheeler</option>
+                <option value="4W">4-Wheeler</option>
+              </select>
+            </div>
+            <div class="form-row"><label>Slot Assignment</label>
+              <select id="al_slot"><option value="">-- Auto-assign nearest --</option></select>
+            </div>
+            <button class="btn btn-primary" onclick="allocateSlot()">✅ Allocate Slot</button>
+          </div>
+        </div>
+        <div>
+          <div class="section-title">De-allocate Slot (Exit)</div>
+          <div class="form-box">
+            <div class="form-row"><label>Select Occupied Slot</label>
+              <select id="deal_slot"><option value="">-- Select slot --</option></select>
+            </div>
+            <div id="deal_info" style="margin-bottom:12px;font-size:.82rem;color:var(--muted)"></div>
+            <button class="btn btn-danger" onclick="deallocateSlot()">🚪 Vehicle Exited</button>
+          </div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="section-title">Active Allocations</div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Slot ID</th><th>Location</th><th>Vehicle No.</th><th>Type</th><th>Time In</th></tr></thead>
+        <tbody id="activeAllocTable"></tbody></table>
+      </div>
+    </div>
+
+    <!-- VEHICLES -->
+    <div class="page" id="page-vehicles">
+      <div class="page-title">Vehicle Registry</div>
+      <div class="page-sub">Register and manage all vehicles in the system.</div>
+      <div class="two-col">
+        <div>
+          <div class="section-title">Register Vehicle</div>
+          <div class="form-box">
+            <div class="form-row"><label>Vehicle Number</label>
+              <input id="v_num" placeholder="TN01AB1234" oninput="this.value=this.value.toUpperCase()"/>
+            </div>
+            <div class="form-row"><label>Vehicle Type</label>
+              <select id="v_type">
+                <option value="2W">2-Wheeler (Bike/Scooter)</option>
+                <option value="4W">4-Wheeler (Car/SUV)</option>
+              </select>
+            </div>
+            <div class="form-row"><label>Owner Name</label><input id="v_owner" placeholder="Owner full name"/></div>
+            <div class="form-row"><label>Contact Number</label><input id="v_contact" placeholder="9876543210"/></div>
+            <button class="btn btn-success" onclick="registerVehicle()">➕ Register Vehicle</button>
+          </div>
+        </div>
+        <div>
+          <div class="section-title">Registered Vehicles</div>
+          <div class="filter-row">
+            <input id="vSearch" placeholder="Search vehicle / owner..." oninput="renderVehicles()" style="flex:1"/>
+            <select id="vTypeFilter" onchange="renderVehicles()">
+              <option value="">All</option><option value="2W">2W</option><option value="4W">4W</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Vehicle No.</th><th>Type</th><th>Owner</th><th>Contact</th><th>Date</th></tr></thead>
+            <tbody id="vehicleTable"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="page" id="page-reports">
+      <div class="page-title">Parking Reports</div>
+      <div class="page-sub">Filter and generate usage reports. (Admin sees all; employees see own activity)</div>
+      <div class="form-box" style="margin-bottom:20px">
+        <div class="flex-row">
+          <div class="form-row" style="flex:1;margin-bottom:0"><label>From Date</label>
+            <input type="date" id="rep_from"/>
+          </div>
+          <div class="form-row" style="flex:1;margin-bottom:0"><label>To Date</label>
+            <input type="date" id="rep_to"/>
+          </div>
+          <div class="form-row" style="flex:1;margin-bottom:0"><label>Vehicle Type</label>
+            <select id="rep_type"><option value="">All</option><option value="2W">2W</option><option value="4W">4W</option></select>
+          </div>
+          <div style="padding-top:22px"><button class="btn btn-primary" onclick="generateReport()">📋 Generate</button></div>
+        </div>
+      </div>
+      <div id="reportSummary" class="cards"></div>
+      <div class="section-title">Allocation Log</div>
+      <div class="table-wrap">
+        <table class="report-table"><thead><tr><th>Slot</th><th>Vehicle</th><th>Type</th><th>Time In</th><th>Time Out</th><th>Duration</th><th>By</th></tr></thead>
+        <tbody id="reportTable"></tbody></table>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="page" id="page-notifications">
+      <div class="page-title">Notifications &amp; Alerts</div>
+      <div class="page-sub">System events, warnings and alerts.</div>
+      <div class="flex-row" style="margin-bottom:16px">
+        <button class="btn btn-ghost btn-sm" onclick="clearNotifs()">🗑 Clear All</button>
+        <button class="btn btn-ghost btn-sm" onclick="addTestNotif()">+ Add Test Alert</button>
+      </div>
+      <div id="notifList"></div>
+    </div>
+
+    <!-- USERS (admin only) -->
+    <div class="page" id="page-users">
+      <div class="page-title">User Management</div>
+      <div class="page-sub">Add, edit, or revoke employee accounts. (Admin only)</div>
+      <div class="table-wrap" style="margin-bottom:20px">
+        <table><thead><tr><th>Username</th><th>Employee ID</th><th>Name</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+        <tbody id="usersTable"></tbody></table>
+      </div>
+    </div>
+
+    <!-- BACKUP (admin only) -->
+    <div class="page" id="page-backup">
+      <div class="page-title">Database Backup &amp; Restore</div>
+      <div class="page-sub">Export and restore all system data. (Admin only)</div>
+      <div class="two-col">
+        <div class="form-box">
+          <div class="section-title">Backup</div>
+          <p style="font-size:.83rem;color:var(--muted);margin-bottom:16px">Creates a full snapshot of all data: vehicles, slots, allocations, users, notifications.</p>
+          <button class="btn btn-primary" onclick="doBackup()">💾 Download Backup</button>
+          <div class="spacer"></div>
+          <div class="section-title">Backup History</div>
+          <div id="backupHistory" style="font-size:.82rem;color:var(--muted)">No backups yet.</div>
+        </div>
+        <div class="form-box">
+          <div class="section-title">Restore</div>
+          <p style="font-size:.83rem;color:var(--muted);margin-bottom:16px">Upload a previously downloaded backup JSON file to restore the system state.</p>
+          <div class="form-row"><label>Upload Backup File (.json)</label>
+            <input type="file" id="restoreFile" accept=".json" style="background:var(--surface2);"/>
+          </div>
+          <button class="btn btn-danger" onclick="doRestore()">♻️ Restore Now</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end main -->
+</div><!-- end app -->
+
+<div id="toast"></div>
+
+<script>
+
+const LS = {
+  get: k => { try { return JSON.parse(localStorage.getItem('pms_'+k)) } catch{ return null } },
+  set: (k,v) => localStorage.setItem('pms_'+k, JSON.stringify(v)),
+};
+
+function initData() {
+  if (!LS.get('users')) {
+    LS.set('users', [{
+      username:'admin', password:'admin123', empId:'EMP000',
+      name:'Admin User', role:'admin', status:'active',
+      createdAt: new Date().toISOString(), lastLogin: null
+    }]);
+  }
+  if (!LS.get('slots')) {
+    const slots = [];
+    for(let i=1;i<=10;i++) slots.push({ id:`2W-${String(i).padStart(2,'0')}`, type:'2W', location:`Level 1 / Bay ${i}`, status:'available', vehicleNo:null, allocatedAt:null });
+    for(let i=1;i<=20;i++) slots.push({ id:`4W-${String(i).padStart(2,'0')}`, type:'4W', location:`Level 2 / Bay ${i}`, status:'available', vehicleNo:null, allocatedAt:null });
+    LS.set('slots', slots);
+  }
+  if (!LS.get('vehicles'))    LS.set('vehicles', []);
+  if (!LS.get('allocLog'))    LS.set('allocLog', []);
+  if (!LS.get('notifications')) LS.set('notifications', [
+    { type:'info', msg:'System initialized. Welcome to PMS.', time: new Date().toISOString() }
+  ]);
+  if (!LS.get('backupLog'))   LS.set('backupLog', []);
+}
+
+
+let currentUser = null;
+
+function switchAuthTab(t) {
+  document.querySelectorAll('.tabs button').forEach((b,i)=>b.classList.toggle('active',(t==='login'?i===0:i===1)));
+  document.getElementById('loginForm').style.display    = t==='login' ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = t==='register' ? 'block' : 'none';
+}
+
+function doLogin() {
+  const u = val('l_user').trim(), p = val('l_pass');
+  const users = LS.get('users') || [];
+  const user = users.find(x => x.username===u && x.password===p);
+  if (!user) { toast('Invalid username or password','error'); return; }
+  if (user.status === 'revoked') { toast('Account access has been revoked','error'); return; }
+  user.lastLogin = new Date().toISOString();
+  LS.set('users', users);
+  currentUser = user;
+  startApp();
+}
+
+function doRegister() {
+  const name=val('r_name').trim(), empId=val('r_empid').trim(), username=val('r_user').trim(), password=val('r_pass');
+  if(!name||!empId||!username||!password){ toast('All fields are required','error'); return; }
+  if(password.length<6){ toast('Password must be at least 6 characters','error'); return; }
+  const users = LS.get('users') || [];
+  if(users.find(x=>x.username===username)){ toast('Username already taken','error'); return; }
+  if(users.find(x=>x.empId===empId)){ toast('Employee ID already registered','error'); return; }
+  users.push({ username, password, empId, name, role:'employee', status:'active', createdAt:new Date().toISOString(), lastLogin:null });
+  LS.set('users', users);
+  addNotif('info',`New employee registered: ${name} (${empId})`);
+  toast('Account created! You can now login.','success');
+  switchAuthTab('login');
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('authScreen').style.display = 'flex';
+  set('l_user',''); set('l_pass','');
+}
+
+function startApp() {
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  // set admin class
+  document.getElementById('app').className = currentUser.role==='admin' ? 'is-admin' : '';
+  document.getElementById('sidebar').className = 'sidebar ' + (currentUser.role==='admin'?'is-admin':'');
+  document.getElementById('sb_name').textContent = currentUser.name;
+  document.getElementById('sb_empid').textContent = currentUser.empId;
+  document.getElementById('sb_role').textContent = currentUser.role==='admin' ? '⭐ Admin' : 'Employee';
+  goto('dashboard');
+}
+
+function goto(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{ if(n.getAttribute('onclick')?.includes(`'${page}'`)) n.classList.add('active'); });
+  refreshPage(page);
+}
+
+function refreshPage(page) {
+  if(page==='dashboard') renderDashboard();
+  if(page==='slots') renderSlots();
+  if(page==='allocate') renderAllocate();
+  if(page==='vehicles') renderVehicles();
+  if(page==='reports') generateReport();
+  if(page==='notifications') renderNotifs();
+  if(page==='users') renderUsers();
+  if(page==='backup') renderBackup();
+}
+
+
+function renderDashboard() {
+  const slots = LS.get('slots')||[];
+  const total = slots.length;
+  const occupied = slots.filter(s=>s.status==='occupied').length;
+  const free = total - occupied;
+  const tw = slots.filter(s=>s.type==='2W');
+  const fw = slots.filter(s=>s.type==='4W');
+  const vehicles = LS.get('vehicles')||[];
+  document.getElementById('dashCards').innerHTML = `
+    <div class="card"><div class="card-label">Total Slots</div><div class="card-value blue">${total}</div></div>
+    <div class="card"><div class="card-label">Available</div><div class="card-value green">${free}</div></div>
+    <div class="card"><div class="card-label">Occupied</div><div class="card-value red">${occupied}</div></div>
+    <div class="card"><div class="card-label">2-Wheeler Free</div><div class="card-value yellow">${tw.filter(s=>s.status==='available').length}/${tw.length}</div></div>
+    <div class="card"><div class="card-label">4-Wheeler Free</div><div class="card-value yellow">${fw.filter(s=>s.status==='available').length}/${fw.length}</div></div>
+    <div class="card"><div class="card-label">Registered Vehicles</div><div class="card-value blue">${vehicles.length}</div></div>
+  `;
+  // recent allocations
+  const log = (LS.get('allocLog')||[]).slice().reverse().slice(0,6);
+  document.getElementById('recentAlloc').innerHTML = log.length ? log.map(l=>`
+    <tr><td><span class="tag">${l.slotId}</span></td><td>${l.vehicleNo}</td>
+    <td style="color:var(--muted);font-size:.78rem">${fmtTime(l.timeIn)}</td>
+    <td><span class="badge ${l.timeOut?'badge-green':'badge-red'}">${l.timeOut?'Exited':'Active'}</span></td></tr>
+  `).join('') : `<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:20px">No allocations yet</td></tr>`;
+  // recent alerts
+  const notifs = (LS.get('notifications')||[]).slice().reverse().slice(0,4);
+  document.getElementById('dashAlerts').innerHTML = notifs.length ? notifs.map(n=>`
+    <div class="notif-item">
+      <div class="notif-ico">${notifIco(n.type)}</div>
+      <div class="notif-body"><div class="notif-msg">${n.msg}</div><div class="notif-time">${fmtTime(n.time)}</div></div>
+    </div>`).join('') : '<div style="color:var(--muted);font-size:.83rem">No alerts</div>';
+  // capacity warning
+  if(free===0) addNotif('danger','⚠️ Parking is FULL! No slots available.');
+  else if(free<=3) addNotif('warn',`⚠️ Low availability: only ${free} slots left.`);
+}
+
+
+function renderSlots() {
+  const slots = LS.get('slots')||[];
+  const typeF = val('slotFilter'), statusF = val('slotStatusFilter');
+  const filtered = slots.filter(s=>(!typeF||s.type===typeF)&&(!statusF||s.status===statusF));
+  document.getElementById('slotGrid').innerHTML = filtered.map(s=>`
+    <div class="slot-cell ${s.status}" onclick="showSlotDetail('${s.id}')">
+      <div class="slot-id">${s.id}</div>
+      <div class="slot-type">${s.type}</div>
+      <div style="font-size:.65rem;margin-top:2px">${s.status==='occupied'?'🔴 Busy':'🟢 Free'}</div>
+    </div>`).join('');
+}
+
+function showSlotDetail(id) {
+  const slots = LS.get('slots')||[];
+  const s = slots.find(x=>x.id===id);
+  if(!s) return;
+  document.getElementById('slotDetail').style.display='block';
+  document.getElementById('slotDetailContent').innerHTML = `
+    <div class="info-grid">
+      <div class="info-cell"><div class="lbl">Slot ID</div><strong>${s.id}</strong></div>
+      <div class="info-cell"><div class="lbl">Location</div>${s.location}</div>
+      <div class="info-cell"><div class="lbl">Type</div>${s.type==='2W'?'2-Wheeler':'4-Wheeler'}</div>
+      <div class="info-cell"><div class="lbl">Status</div><span class="badge ${s.status==='available'?'badge-green':'badge-red'}">${s.status}</span></div>
+      ${s.status==='occupied'?`<div class="info-cell"><div class="lbl">Vehicle</div><strong>${s.vehicleNo}</strong></div><div class="info-cell"><div class="lbl">Since</div>${fmtTime(s.allocatedAt)}</div>`:''}
+    </div>`;
+}
+
+
+function renderAllocate() {
+  const slots = LS.get('slots')||[];
+  // populate available slots dropdown
+  const avail = slots.filter(s=>s.status==='available');
+  document.getElementById('al_slot').innerHTML = '<option value="">-- Auto-assign nearest --</option>' +
+    avail.map(s=>`<option value="${s.id}">${s.id} (${s.type}) - ${s.location}</option>`).join('');
+  // populate occupied slots for dealloc
+  const occ = slots.filter(s=>s.status==='occupied');
+  document.getElementById('deal_slot').innerHTML = '<option value="">-- Select slot --</option>' +
+    occ.map(s=>`<option value="${s.id}">${s.id} - ${s.vehicleNo}</option>`).join('');
+  document.getElementById('deal_info').textContent = '';
+  // active allocations table
+  const active = (LS.get('allocLog')||[]).filter(l=>!l.timeOut);
+  document.getElementById('activeAllocTable').innerHTML = active.length ? active.map(l=>{
+    const slot = slots.find(s=>s.id===l.slotId)||{};
+    return `<tr><td><span class="tag">${l.slotId}</span></td><td>${slot.location||''}</td><td>${l.vehicleNo}</td><td>${l.vehicleType}</td><td style="font-size:.78rem;color:var(--muted)">${fmtTime(l.timeIn)}</td></tr>`;
+  }).join('') : `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">No active allocations</td></tr>`;
+}
+
+document.addEventListener('change', function(e){
+  if(e.target.id==='deal_slot'){
+    const id=e.target.value;
+    if(!id){ document.getElementById('deal_info').textContent=''; return; }
+    const s=(LS.get('slots')||[]).find(x=>x.id===id);
+    if(s) document.getElementById('deal_info').innerHTML=`Vehicle: <strong>${s.vehicleNo}</strong> | In at: ${fmtTime(s.allocatedAt)}`;
+  }
+  if(e.target.id==='al_type') refreshAvailSlots();
+});
+
+function refreshAvailSlots(){
+  const t=val('al_type');
+  const avail=(LS.get('slots')||[]).filter(s=>s.status==='available'&&(!t||s.type===t));
+  document.getElementById('al_slot').innerHTML='<option value="">-- Auto-assign nearest --</option>'+
+    avail.map(s=>`<option value="${s.id}">${s.id} (${s.type}) - ${s.location}</option>`).join('');
+}
+
+function allocateSlot() {
+  const vehNo=val('al_veh').trim(), vType=val('al_type'), slotPref=val('al_slot');
+  if(!vehNo){ toast('Enter vehicle number','error'); return; }
+  const slots=LS.get('slots')||[];
+  // find slot
+  let slot;
+  if(slotPref) slot=slots.find(s=>s.id===slotPref&&s.status==='available');
+  else slot=slots.find(s=>s.type===vType&&s.status==='available');
+  if(!slot){ toast('No available slot of that type found','error'); return; }
+  slot.status='occupied'; slot.vehicleNo=vehNo; slot.allocatedAt=new Date().toISOString();
+  LS.set('slots',slots);
+  const log=LS.get('allocLog')||[];
+  log.push({ slotId:slot.id, vehicleNo:vehNo, vehicleType:vType, timeIn:slot.allocatedAt, timeOut:null, by:currentUser.username });
+  LS.set('allocLog',log);
+  addNotif('info',`Slot ${slot.id} allocated to vehicle ${vehNo}`);
+  toast(`Slot ${slot.id} allocated to ${vehNo}!`,'success');
+  set('al_veh','');
+  renderAllocate();
+}
+
+function deallocateSlot() {
+  const slotId=val('deal_slot');
+  if(!slotId){ toast('Select a slot to de-allocate','error'); return; }
+  const slots=LS.get('slots')||[];
+  const slot=slots.find(s=>s.id===slotId);
+  if(!slot||slot.status!=='occupied'){ toast('Slot not occupied','error'); return; }
+  const vehNo=slot.vehicleNo;
+  const now=new Date().toISOString();
+  slot.status='available'; slot.vehicleNo=null; slot.allocatedAt=null;
+  LS.set('slots',slots);
+  const log=LS.get('allocLog')||[];
+  const entry=log.slice().reverse().find(l=>l.slotId===slotId&&!l.timeOut);
+  if(entry) entry.timeOut=now;
+  LS.set('allocLog',log);
+  addNotif('info',`Slot ${slotId} de-allocated. Vehicle ${vehNo} exited.`);
+  toast(`${vehNo} exited. Slot ${slotId} is now available.`,'success');
+  renderAllocate();
+}
+
+
+function registerVehicle() {
+  const num=val('v_num').trim(), type=val('v_type'), owner=val('v_owner').trim(), contact=val('v_contact').trim();
+  if(!num||!owner){ toast('Vehicle number and owner name are required','error'); return; }
+  const vehicles=LS.get('vehicles')||[];
+  if(vehicles.find(v=>v.number===num)){ toast('Vehicle already registered','error'); return; }
+  vehicles.push({ number:num, type, owner, contact, date:new Date().toISOString() });
+  LS.set('vehicles',vehicles);
+  addNotif('info',`Vehicle registered: ${num} (${owner})`);
+  toast(`Vehicle ${num} registered!`,'success');
+  set('v_num',''); set('v_owner',''); set('v_contact','');
+  renderVehicles();
+}
+
+function renderVehicles() {
+  const q=(val('vSearch')||'').toLowerCase(), tf=val('vTypeFilter');
+  const vehicles=(LS.get('vehicles')||[]).filter(v=>
+    (!q||(v.number+v.owner).toLowerCase().includes(q))&&(!tf||v.type===tf)
+  );
+  document.getElementById('vehicleTable').innerHTML = vehicles.length ? vehicles.map(v=>`
+    <tr><td><strong>${v.number}</strong></td><td><span class="badge ${v.type==='2W'?'badge-blue':'badge-yellow'}">${v.type}</span></td>
+    <td>${v.owner}</td><td>${v.contact||'—'}</td>
+    <td style="font-size:.75rem;color:var(--muted)">${fmtDate(v.date)}</td></tr>
+  `).join('') : `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">No vehicles found</td></tr>`;
+}
+
+function generateReport() {
+  const from=val('rep_from'), to=val('rep_to'), type=val('rep_type');
+  let log=(LS.get('allocLog')||[]);
+  if(currentUser.role!=='admin') log=log.filter(l=>l.by===currentUser.username);
+  if(from) log=log.filter(l=>l.timeIn>=from);
+  if(to)   log=log.filter(l=>l.timeIn<=to+'T23:59:59');
+  if(type) log=log.filter(l=>l.vehicleType===type);
+  const total=log.length, active=log.filter(l=>!l.timeOut).length, exited=log.filter(l=>l.timeOut).length;
+  document.getElementById('reportSummary').innerHTML=`
+    <div class="card"><div class="card-label">Total Records</div><div class="card-value blue">${total}</div></div>
+    <div class="card"><div class="card-label">Currently Active</div><div class="card-value red">${active}</div></div>
+    <div class="card"><div class="card-label">Completed</div><div class="card-value green">${exited}</div></div>
+  `;
+  document.getElementById('reportTable').innerHTML = log.length ? log.slice().reverse().map(l=>`
+    <tr><td><span class="tag">${l.slotId}</span></td><td>${l.vehicleNo}</td>
+    <td><span class="badge ${l.vehicleType==='2W'?'badge-blue':'badge-yellow'}">${l.vehicleType}</span></td>
+    <td style="font-size:.75rem">${fmtTime(l.timeIn)}</td>
+    <td style="font-size:.75rem">${l.timeOut?fmtTime(l.timeOut):'<span style="color:var(--danger)">Still in</span>'}</td>
+    <td style="font-size:.75rem">${l.timeOut?duration(l.timeIn,l.timeOut):'—'}</td>
+    <td style="color:var(--muted);font-size:.75rem">${l.by}</td></tr>
+  `).join('') : `<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:20px">No records match your filter</td></tr>`;
+}
+
+function renderNotifs() {
+  const notifs=(LS.get('notifications')||[]).slice().reverse();
+  document.getElementById('notifList').innerHTML = notifs.length ? notifs.map(n=>`
+    <div class="notif-item">
+      <div class="notif-ico">${notifIco(n.type)}</div>
+      <div class="notif-body"><div class="notif-msg">${n.msg}</div><div class="notif-time">${fmtTime(n.time)}</div></div>
+    </div>`).join('') : '<div style="color:var(--muted);font-size:.83rem">No notifications.</div>';
+}
+
+function addNotif(type, msg) {
+  const notifs=LS.get('notifications')||[];
+  // prevent duplicate same-minute notifs
+  const last=notifs[notifs.length-1];
+  if(last&&last.msg===msg) return;
+  notifs.push({ type, msg, time:new Date().toISOString() });
+  if(notifs.length>100) notifs.shift();
+  LS.set('notifications',notifs);
+}
+
+function clearNotifs() { LS.set('notifications',[]); renderNotifs(); toast('Notifications cleared','info'); }
+
+function addTestNotif() {
+  const types=['info','warn','danger'];
+  const msgs=['Parking nearly full!','Unauthorized access attempt detected.','System check passed.','Backup scheduled for midnight.'];
+  addNotif(types[Math.floor(Math.random()*3)], msgs[Math.floor(Math.random()*msgs.length)]);
+  renderNotifs();
+}
+
+function notifIco(t) { return {info:'ℹ️',warn:'⚠️',danger:'🚨',success:'✅'}[t]||'🔔'; }
+
+function renderUsers() {
+  if(currentUser.role!=='admin') return;
+  const users=LS.get('users')||[];
+  document.getElementById('usersTable').innerHTML = users.map(u=>`
+    <tr>
+      <td><strong>${u.username}</strong></td>
+      <td><span class="tag">${u.empId}</span></td>
+      <td>${u.name}</td>
+      <td><span class="badge ${u.role==='admin'?'badge-blue':'badge-green'}">${u.role}</span></td>
+      <td><span class="badge ${u.status==='active'?'badge-green':'badge-red'}">${u.status}</span></td>
+      <td style="font-size:.75rem;color:var(--muted)">${u.lastLogin?fmtTime(u.lastLogin):'Never'}</td>
+      <td>
+        ${u.username!=='admin'?`
+          <button class="btn btn-sm btn-ghost" onclick="toggleUserStatus('${u.username}')">${u.status==='active'?'Revoke':'Restore'}</button>
+          <button class="btn btn-sm ${u.role==='admin'?'btn-ghost':'btn-ghost'}" onclick="toggleUserRole('${u.username}')">${u.role==='admin'?'→ Employee':'→ Admin'}</button>
+        `:'<span style="color:var(--muted);font-size:.75rem">Protected</span>'}
+      </td>
+    </tr>`).join('');
+}
+
+function toggleUserStatus(username) {
+  const users=LS.get('users')||[];
+  const u=users.find(x=>x.username===username);
+  if(!u) return;
+  u.status=u.status==='active'?'revoked':'active';
+  LS.set('users',users);
+  addNotif('info',`User ${username} access ${u.status==='active'?'restored':'revoked'} by ${currentUser.username}`);
+  renderUsers();
+  toast(`User ${username} ${u.status==='active'?'restored':'revoked'}`,'info');
+}
+
+function toggleUserRole(username) {
+  const users=LS.get('users')||[];
+  const u=users.find(x=>x.username===username);
+  if(!u) return;
+  u.role=u.role==='admin'?'employee':'admin';
+  LS.set('users',users);
+  addNotif('info',`User ${username} role changed to ${u.role} by ${currentUser.username}`);
+  renderUsers();
+  toast(`Role updated for ${username}`,'info');
+}
+
+function renderBackup() {
+  const log=LS.get('backupLog')||[];
+  document.getElementById('backupHistory').innerHTML = log.length ?
+    log.slice().reverse().map(b=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:.78rem">${fmtTime(b.time)} — ${b.note}</div>`).join('') :
+    'No backups yet.';
+}
+
+function doBackup() {
+  const data = {
+    exportedAt: new Date().toISOString(),
+    exportedBy: currentUser.username,
+    users:         LS.get('users'),
+    slots:         LS.get('slots'),
+    vehicles:      LS.get('vehicles'),
+    allocLog:      LS.get('allocLog'),
+    notifications: LS.get('notifications'),
+    backupLog:     LS.get('backupLog'),
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`pms_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  const bLog=LS.get('backupLog')||[];
+  bLog.push({ time:new Date().toISOString(), note:`Full backup by ${currentUser.username}` });
+  LS.set('backupLog',bLog);
+  addNotif('success',`Backup created by ${currentUser.username}`);
+  renderBackup();
+  toast('Backup downloaded!','success');
+}
+
+function doRestore() {
+  const file=document.getElementById('restoreFile').files[0];
+  if(!file){ toast('Select a backup file first','error'); return; }
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try {
+      const data=JSON.parse(e.target.result);
+      if(data.users)         LS.set('users',data.users);
+      if(data.slots)         LS.set('slots',data.slots);
+      if(data.vehicles)      LS.set('vehicles',data.vehicles);
+      if(data.allocLog)      LS.set('allocLog',data.allocLog);
+      if(data.notifications) LS.set('notifications',data.notifications);
+      addNotif('success',`System restored from backup (${data.exportedAt?.slice(0,10)}) by ${currentUser.username}`);
+      toast('Restore successful! Refreshing...','success');
+      setTimeout(()=>goto('dashboard'),1200);
+    } catch {
+      toast('Invalid backup file','error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function val(id) { return (document.getElementById(id)||{}).value||''; }
+function set(id,v) { const el=document.getElementById(id); if(el) el.value=v; }
+function fmtTime(iso) { if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString()+' '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+function fmtDate(iso) { if(!iso) return '—'; return new Date(iso).toLocaleDateString(); }
+function duration(a,b) {
+  const ms=new Date(b)-new Date(a);
+  const m=Math.floor(ms/60000), h=Math.floor(m/60);
+  return h>0?`${h}h ${m%60}m`:`${m}m`;
+}
+
+let toastQ=[];
+function toast(msg, type='info') {
+  const el=document.createElement('div');
+  el.className=`toast-msg ${type}`;
+  el.textContent=msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(()=>el.remove(), 3200);
+}
+
+initData();
+// set default report dates
+(function(){
+  const now=new Date();
+  const m=now.getMonth(), y=now.getFullYear();
+  const from=new Date(y,m,1).toISOString().slice(0,10);
+  const to=new Date(y,m+1,0).toISOString().slice(0,10);
+  setTimeout(()=>{ set('rep_from',from); set('rep_to',to); },100);
+})();
+</script>
+</body>
+</html>
