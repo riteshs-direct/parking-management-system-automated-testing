@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+.pytest_cache/
+report.html
+chromedriver
+chromedriver.exe
+pms_backup_*.json
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
