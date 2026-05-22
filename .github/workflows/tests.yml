@@ -1,0 +1,27 @@
+name: Selenium Test Suite
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - uses: browser-actions/setup-chrome@v1
+      - name: Run tests
+        run: python -m pytest test_parking_system.py -v --html=report.html --self-contained-html
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: report.html
